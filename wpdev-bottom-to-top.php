@@ -26,6 +26,7 @@ class WPDev_Bottom_To_Top {
         add_action('wp_head', [$this, 'customize_theme_color']);
         register_activation_hook(__FILE__, [$this, 'plugin_activation']);
         add_action('admin_init', [$this, 'plugin_redirect']);
+        add_action('admin_init', [$this, 'register_settings']);
     }
 
     public function add_admin_menu() {
@@ -49,24 +50,15 @@ class WPDev_Bottom_To_Top {
         <div class="wpdbtt_main_area">
             <div class="wpdbtt_body_area wpdbtt_common">
                 <h3 id="title"><?php esc_attr_e('🎨 WPDev Bottom to Top Customizer', 'wpdbtt'); ?></h3>
-                <form action="options.php" method="post">
+                <form method="post" action="options.php">
                     <?php
-                    wp_nonce_field('update-options');
-                    // Check if form is submitted
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                        check_admin_referer('update-options');
-                        update_option('wpdbtt-primary-color', sanitize_text_field($_POST['wpdbtt-primary-color']));
-                        update_option('wpdbtt-image-position', sanitize_text_field($_POST['wpdbtt-image-position']));
-                        update_option('wpdbtt-round-corner', sanitize_text_field($_POST['wpdbtt-round-corner']));
-                    }
+                    settings_fields('wpdbtt-settings-group');
+                    do_settings_sections('wpdbtt-settings-group');
                     ?>
-
                     <label for="wpdbtt-primary-color"><?php esc_attr_e('Primary Color', 'wpdbtt'); ?></label>
-                    <small><?php esc_attr_e('Add your Primary Color', 'wpdbtt'); ?></small>
                     <input type="color" name="wpdbtt-primary-color" value="<?php echo esc_attr(get_option('wpdbtt-primary-color', '#000000')); ?>">
 
                     <label for="wpdbtt-image-position"><?php esc_attr_e('Button Position', 'wpdbtt'); ?></label>
-                    <small><?php esc_attr_e('Where do you want to show your button position?', 'wpdbtt'); ?></small>
                     <select name="wpdbtt-image-position" id="wpdbtt-image-position">
                         <option value="right" <?php selected(get_option('wpdbtt-image-position', 'right'), 'right'); ?>><?php esc_attr_e('Right', 'wpdbtt'); ?></option>
                         <option value="left" <?php selected(get_option('wpdbtt-image-position', 'right'), 'left'); ?>><?php esc_attr_e('Left', 'wpdbtt'); ?></option>
@@ -74,7 +66,6 @@ class WPDev_Bottom_To_Top {
                     </select>
 
                     <label><?php esc_attr_e('Icon Corner', 'wpdbtt'); ?></label>
-                    <small><?php esc_attr_e('Do you need a customize icon corner button?', 'wpdbtt'); ?></small>
                     <label class="radios">
                         <input type="radio" name="wpdbtt-round-corner" value="rectangle" <?php checked(get_option('wpdbtt-round-corner', 'rectangle'), 'rectangle'); ?>> <?php esc_attr_e('Rectangle', 'wpdbtt'); ?>
                     </label>
@@ -85,8 +76,6 @@ class WPDev_Bottom_To_Top {
                         <input type="radio" name="wpdbtt-round-corner" value="circle" <?php checked(get_option('wpdbtt-round-corner', 'rectangle'), 'circle'); ?>> <?php esc_attr_e('Circle', 'wpdbtt'); ?>
                     </label>
 
-                    <input type="hidden" name="action" value="update">
-                    <input type="hidden" name="page_options" value="wpdbtt-primary-color, wpdbtt-image-position, wpdbtt-round-corner">
                     <input type="submit" name="submit" value="<?php esc_html_e('Save Changes', 'wpdbtt') ?>">
                 </form>
             </div>
@@ -123,10 +112,10 @@ class WPDev_Bottom_To_Top {
         <style>
             #scrollUp {
                 background-color: <?php echo esc_attr(get_option('wpdbtt-primary-color', '#000000')); ?> !important;
-                <?php if(get_option('wpdbtt-image-position', 'right') == 'left') { echo 'left: 5px; right: auto;'; } ?>
-                <?php if(get_option('wpdbtt-image-position', 'right') == 'center') { echo 'left: 50%; right: 50%;'; } ?>
-                <?php if(get_option('wpdbtt-round-corner', 'rectangle') == 'r-rectangle') { echo 'border-radius: 15% !important;'; } ?>
-                <?php if(get_option('wpdbtt-round-corner', 'rectangle') == 'circle') { echo 'border-radius: 50% !important;'; } ?>
+                <?php if (get_option('wpdbtt-image-position', 'right') == 'left') { echo 'left: 5px; right: auto;'; } ?>
+                <?php if (get_option('wpdbtt-image-position', 'right') == 'center') { echo 'left: 50%; right: 50%;'; } ?>
+                <?php if (get_option('wpdbtt-round-corner', 'rectangle') == 'r-rectangle') { echo 'border-radius: 15% !important;'; } ?>
+                <?php if (get_option('wpdbtt-round-corner', 'rectangle') == 'circle') { echo 'border-radius: 50% !important;'; } ?>
             }
         </style>
         <?php
@@ -137,12 +126,19 @@ class WPDev_Bottom_To_Top {
         add_option('wpdbtt-image-position', 'right');
         add_option('wpdbtt-round-corner', 'rectangle');
         add_option('wpdbtt_plugin_do_activation_redirect', true);
+        $this->register_settings();
+    }
+
+    public function register_settings() {
+        register_setting('wpdbtt-settings-group', 'wpdbtt-primary-color');
+        register_setting('wpdbtt-settings-group', 'wpdbtt-image-position');
+        register_setting('wpdbtt-settings-group', 'wpdbtt-round-corner');
     }
 
     public function plugin_redirect() {
-        if(get_option('wpdbtt_plugin_do_activation_redirect', false)){
+        if (get_option('wpdbtt_plugin_do_activation_redirect', false)) {
             delete_option('wpdbtt_plugin_do_activation_redirect');
-            if(!isset($_GET['active-multi'])){
+            if (!isset($_GET['active-multi'])) {
                 wp_safe_redirect(admin_url('admin.php?page=wpdbtt-plugin-option'));
                 exit;
             }
